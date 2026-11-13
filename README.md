@@ -4,6 +4,8 @@ An interactive Sankey diagram that traces students from their first-year course 
 
 It grew out of a 2018 undergraduate research project on student retention that asked: *how early can you see who will leave a program?* In this dataset the answer is the second semester. Of the 690 students who passed none of their second-semester units, **not one graduated**.
 
+**[Live demo →](https://dariangarcia-404.github.io/student-flow-sankey/)**
+
 ![Sankey screenshot](docs/screenshot.png)
 
 ## Data
