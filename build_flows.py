@@ -41,6 +41,11 @@ PROGRAMS = {
 ALL = "All programs"
 RESULTS = ["Passed all", "Passed some", "Passed none", "No units"]
 OUTCOMES = ["Graduate", "Enrolled", "Dropout"]
+# The dataset's outcome is measured at the end of the program's normal duration
+# (e.g. 3 years for a 3-year degree), so "Enrolled" means still studying but
+# not finished on time.
+OUTCOME_LABELS = {"Graduate": "Graduated", "Enrolled": "Still enrolled (behind schedule)",
+                  "Dropout": "Dropped out"}
 
 
 def semester_result(row: dict, sem: str) -> str:
@@ -54,7 +59,8 @@ def semester_result(row: dict, sem: str) -> str:
 
 
 def build_graph(rows: list[dict]) -> dict:
-    stages = [[f"Sem 1: {r}" for r in RESULTS], [f"Sem 2: {r}" for r in RESULTS], OUTCOMES]
+    stages = [[f"Sem 1: {r}" for r in RESULTS], [f"Sem 2: {r}" for r in RESULTS],
+              [OUTCOME_LABELS[o] for o in OUTCOMES]]
     names = [n for stage in stages for n in stage]
     index = {n: i for i, n in enumerate(names)}
 
@@ -63,7 +69,7 @@ def build_graph(rows: list[dict]) -> dict:
         s1 = f"Sem 1: {semester_result(row, '1st')}"
         s2 = f"Sem 2: {semester_result(row, '2nd')}"
         counts[(s1, s2)] += 1
-        counts[(s2, row["Target"])] += 1
+        counts[(s2, OUTCOME_LABELS[row["Target"]])] += 1
 
     links = [{"source": index[a], "target": index[b], "value": v}
              for (a, b), v in sorted(counts.items(), key=lambda kv: (index[kv[0][0]], index[kv[0][1]]))]

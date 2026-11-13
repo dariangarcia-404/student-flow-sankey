@@ -37,7 +37,8 @@
 <main>
   <h1>How first-year results predict who finishes a degree</h1>
   <p>Each band is a group of students, traced from how many course units they passed in their first and second
-     semesters to whether they graduated, are still enrolled, or dropped out. Hover a band for counts.</p>
+     semesters to where they stood when their program should have ended (e.g. after 3 years for a 3-year degree):
+     graduated, dropped out, or still enrolled but behind schedule. Hover a band for counts.</p>
 
   <div class="controls">
     <label for="program">Program</label>
@@ -65,7 +66,8 @@ const colorOf = name => {
   if (name.endsWith("Passed some")) return v("--some");
   if (name.endsWith("Passed none")) return v("--none");
   if (name.endsWith("No units")) return v("--nounits");
-  return { Graduate: v("--grad"), Enrolled: v("--enr"), Dropout: v("--drop") }[name];
+  if (name.startsWith("Still enrolled")) return v("--enr");
+  return { "Graduated": v("--grad"), "Dropped out": v("--drop") }[name];
 };
 const label = name => name.replace(/^Sem \d: /, "");
 const fmt = d3.format(",");

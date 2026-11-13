@@ -1,6 +1,6 @@
 # Student Flow Sankey
 
-An interactive Sankey diagram that traces students from their first-year course results to whether they graduated, are still enrolled, or dropped out, with a filter for each degree program.
+An interactive Sankey diagram that traces students from their first-year course results to where they stood when their program should have ended (graduated, dropped out, or still enrolled but behind schedule), with a filter for each degree program.
 
 It grew out of a 2018 undergraduate research project on student retention that asked: *how early can you see who will leave a program?* In this dataset the answer is the second semester. Of the 690 students who passed none of their second-semester units, **not one graduated**.
 
@@ -20,7 +20,9 @@ It grew out of a 2018 undergraduate research project on student retention that a
 data/students.csv  ->  build_flows.py  ->  docs/flows.json  ->  docs/index.html (D3 + d3-sankey)
 ```
 
-Each student is placed in a group for each semester based on curricular units **approved vs. enrolled**: *Passed all*, *Passed some*, *Passed none*, or *No units* (enrolled in nothing that term). `build_flows.py` counts how students move from semester 1 → semester 2 → final outcome. It writes one graph for all students plus one per program, which the page's dropdown switches between.
+Each student is placed in a group for each semester based on curricular units **approved vs. enrolled**: *Passed all*, *Passed some*, *Passed none*, or *No units* (enrolled in nothing that term). The outcome is each student's status **at the end of their program's normal duration** (for example, after 3 years of a 3-year degree), as defined by the dataset: *Graduated*, *Dropped out*, or *Still enrolled (behind schedule)*, meaning they hadn't finished on time but hadn't left either.
+
+`build_flows.py` counts how students move from semester 1 → semester 2 → final outcome. It writes one graph for all students plus one per program, which the page's dropdown switches between.
 
 ## Run it
 
