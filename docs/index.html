@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Flow Sankey</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #1f2328; --muted: #5f656d; --border: #d8d5ce;
+    --all: #2f7d5b; --some: #c98a2b; --none: #b8463c; --nounits: #8a8f98;
+    --grad: #2f6db5; --enr: #7a5bb5; --drop: #b8463c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16181b; --fg: #e8e6e1; --muted: #9aa0a6; --border: #33373c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { margin: 0 0 6px; font-size: 1.6rem; line-height: 1.25; }
+  p { margin: 0 0 12px; color: var(--muted); max-width: 72ch; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 20px 0 8px; }
+  select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border);
+           border-radius: 6px; padding: 6px 10px; max-width: 100%; }
+  .count { color: var(--muted); font-size: .9rem; }
+  .stages { display: flex; justify-content: space-between; color: var(--muted);
+            font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; margin-top: 8px; }
+  svg { width: 100%; height: auto; display: block; }
+  .link { fill: none; stroke-opacity: .3; }
+  .link:hover { stroke-opacity: .6; }
+  .node text { fill: var(--fg); font-size: 13px; pointer-events: none; }
+  footer { margin-top: 24px; font-size: .8rem; color: var(--muted); }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>How first-year results predict who finishes a degree</h1>
+  <p>Each band is a group of students, traced from how many course units they passed in their first and second
+     semesters to whether they graduated, are still enrolled, or dropped out. Hover a band for counts.</p>
+
+  <div class="controls">
+    <label for="program">Program</label>
+    <select id="program"></select>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="stages"><span>1st semester</span><span>2nd semester</span><span>Outcome</span></div>
+  <div id="chart"></div>
+
+  <footer>
+    Data: Realinho, Vieira Martins, Machado &amp; Baptista (2021),
+    <a href="https://doi.org/10.24432/C5MC89">Predict Students' Dropout and Academic Success</a>,
+    UCI Machine Learning Repository, CC BY 4.0. Anonymized records of 4,424 students at a Portuguese higher-education institution.
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script>
+const width = 1000, height = 520;
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+const colorOf = name => {
+  if (name.endsWith("Passed all")) return v("--all");
+  if (name.endsWith("Passed some")) return v("--some");
+  if (name.endsWith("Passed none")) return v("--none");
+  if (name.endsWith("No units")) return v("--nounits");
+  return { Graduate: v("--grad"), Enrolled: v("--enr"), Dropout: v("--drop") }[name];
+};
+const label = name => name.replace(/^Sem \d: /, "");
+const fmt = d3.format(",");
+const pct = d3.format(".0%");
+
+const svg = d3.select("#chart").append("svg")
+  .attr("viewBox", [0, 0, width, height])
+  .attr("role", "img")
+  .attr("aria-label", "Sankey diagram of students flowing from semester results to final outcome");
+
+const sankey = d3.sankey()
+  .nodeWidth(14).nodePadding(18).nodeSort(null)
+  .extent([[1, 6], [width - 1, height - 6]]);
+
+d3.json("flows.json").then(graphs => {
+  const select = d3.select("#program");
+  select.selectAll("option").data(Object.keys(graphs)).join("option")
+    .attr("value", d => d).text(d => d);
+  select.on("change", () => render(graphs[select.property("value")]));
+  render(graphs["All programs"]);
+});
+
+function render(graph) {
+  d3.select("#count").text(`${fmt(graph.students)} students`);
+  const { nodes, links } = sankey({
+    nodes: graph.nodes.map(d => ({ ...d })),
+    links: graph.links.map(d => ({ ...d })),
+  });
+  svg.selectAll("*").remove();
+
+  svg.append("g").selectAll("path").data(links).join("path")
+    .attr("class", "link")
+    .attr("d", d3.sankeyLinkHorizontal())
+    .attr("stroke", d => colorOf(d.target.depth === 2 ? d.target.name : d.source.name))
+    .attr("stroke-width", d => Math.max(1, d.width))
+    .append("title")
+    .text(d => `${d.source.name} → ${d.target.name}\n${fmt(d.value)} students ` +
+               `(${pct(d.value / d.source.value)} of ${label(d.source.name).toLowerCase()})`);
+
+  const node = svg.append("g").selectAll("g").data(nodes).join("g").attr("class", "node");
+  node.append("rect")
+    .attr("x", d => d.x0).attr("y", d => d.y0)
+    .attr("width", d => d.x1 - d.x0).attr("height", d => Math.max(1, d.y1 - d.y0))
+    .attr("fill", d => colorOf(d.name))
+    .append("title").text(d => `${d.name}\n${fmt(d.value)} students`);
+  node.append("text")
+    .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+    .attr("y", d => (d.y0 + d.y1) / 2)
+    .attr("dy", "0.35em")
+    .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+    .text(d => d.y1 - d.y0 > 10 ? `${label(d.name)} (${fmt(d.value)})` : "");
+}
+</script>
+</body>
+</html>

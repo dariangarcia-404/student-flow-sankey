@@ -1,0 +1,14 @@
+# Only the public UCI dataset belongs in data/. Keep anything else out.
+data/*
+!data/students.csv
+private/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / tools
+.DS_Store
+.claude/
